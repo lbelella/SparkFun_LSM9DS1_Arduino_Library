@@ -24,13 +24,16 @@ Distributed as-is; no warranty is given.
 #include "SparkFunLSM9DS1.h"
 #include "LSM9DS1_Registers.h"
 #include "LSM9DS1_Types.h"
-#include <Wire.h> // Wire library is used for I2C
-#include <SPI.h>  // SPI library is used for...SPI.
+
+#if defined(ARDUINO)
+  #include <Wire.h> // Wire library is used for I2C
+  #include <SPI.h>  // SPI library is used for...SPI.
 
 #if defined(ARDUINO) && ARDUINO >= 100
   #include "Arduino.h"
 #else
   #include "WProgram.h"
+#endif
 #endif
 
 // Sensor Sensitivity Constants

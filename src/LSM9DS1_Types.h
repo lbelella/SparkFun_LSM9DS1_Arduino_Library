@@ -23,6 +23,10 @@ Distributed as-is; no warranty is given.
 
 #include "LSM9DS1_Registers.h"
 
+#ifndef ARDUINO
+  #include <stdint.h>
+#endif
+
 // The LSM9DS1 functions over both I2C or SPI. This library supports both.
 // But the interface mode used must be sent to the LSM9DS1 constructor. Use
 // one of these two as the first parameter of the constructor.
