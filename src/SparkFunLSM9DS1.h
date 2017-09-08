@@ -495,7 +495,7 @@ protected:
 	///////////////////
 	// initI2C() -- Initialize the I2C hardware.
 	// This function will setup all I2C pins and related hardware.
-	void initI2C();
+	int initI2C();
 	
 	// I2CwriteByte() -- Write a byte out of I2C to a register in the device
 	// Input:

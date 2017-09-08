@@ -29,11 +29,17 @@ Distributed as-is; no warranty is given.
   #include <Wire.h> // Wire library is used for I2C
   #include <SPI.h>  // SPI library is used for...SPI.
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
+  #if defined(ARDUINO) && ARDUINO >= 100
+    #include "Arduino.h"
+  #else
+    #include "WProgram.h"
+  #endif
 #else
-  #include "WProgram.h"
-#endif
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <sys/ioctl.h>
+  #include <linux/i2c-dev.h>
+  #include <fcntl.h>
 #endif
 
 // Sensor Sensitivity Constants
@@ -1158,13 +1164,25 @@ uint8_t LSM9DS1::SPIreadBytes(uint8_t csPin, uint8_t subAddress,
 #endif
 }
 
-void LSM9DS1::initI2C()
+int LSM9DS1::initI2C()
 {
 #ifdef ARDUINO
 	Wire.begin();	// Initialize I2C library
 #else
-	// Init do C I2C stuff here
+	int i2c_bus;
+	
+	if((i2c_bus = open("/dev/i2c-1", O_RDWR)) < 0)
+	{
+		return -1;
+	}
+
+	if(ioctl(i2c_bus, I2C_SLAVE, 0x1e))
+	{
+		return -2;
+	}
+	
 #endif
+	return 0;
 }
 
 // Wire.h read and write protocols
