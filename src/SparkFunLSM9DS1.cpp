@@ -51,6 +51,10 @@ Distributed as-is; no warranty is given.
 #define SENSITIVITY_MAGNETOMETER_12  0.00043
 #define SENSITIVITY_MAGNETOMETER_16  0.00058
 
+#ifndef ARDUINO
+  #define byte uint8_t
+#endif
+
 LSM9DS1::LSM9DS1()
 {
 	init(IMU_MODE_I2C, LSM9DS1_AG_ADDR(1), LSM9DS1_M_ADDR(1));
@@ -1089,6 +1093,7 @@ uint8_t LSM9DS1::mReadBytes(uint8_t subAddress, uint8_t * dest, uint8_t count)
 
 void LSM9DS1::initSPI()
 {
+#ifdef ARDUINO
 	pinMode(_xgAddress, OUTPUT);
 	digitalWrite(_xgAddress, HIGH);
 	pinMode(_mAddress, OUTPUT);
@@ -1102,10 +1107,12 @@ void LSM9DS1::initSPI()
 	// Data is captured on rising edge of clock (CPHA = 0)
 	// Base value of the clock is HIGH (CPOL = 1)
 	SPI.setDataMode(SPI_MODE0);
+#endif
 }
 
 void LSM9DS1::SPIwriteByte(uint8_t csPin, uint8_t subAddress, uint8_t data)
 {
+#ifdef ARDUINO
 	digitalWrite(csPin, LOW); // Initiate communication
 	
 	// If write, bit 0 (MSB) should be 0
@@ -1114,20 +1121,24 @@ void LSM9DS1::SPIwriteByte(uint8_t csPin, uint8_t subAddress, uint8_t data)
 	SPI.transfer(data); // Send data
 	
 	digitalWrite(csPin, HIGH); // Close communication
+#endif
 }
 
 uint8_t LSM9DS1::SPIreadByte(uint8_t csPin, uint8_t subAddress)
 {
+#ifdef ARDUINO
 	uint8_t temp;
 	// Use the multiple read function to read 1 byte. 
 	// Value is returned to `temp`.
 	SPIreadBytes(csPin, subAddress, &temp, 1);
 	return temp;
+#endif
 }
 
 uint8_t LSM9DS1::SPIreadBytes(uint8_t csPin, uint8_t subAddress,
 							uint8_t * dest, uint8_t count)
 {
+#ifdef ARDUINO
 	// To indicate a read, set bit 0 (msb) of first byte to 1
 	uint8_t rAddress = 0x80 | (subAddress & 0x3F);
 	// Mag SPI port is different. If we're reading multiple bytes, 
@@ -1144,51 +1155,79 @@ uint8_t LSM9DS1::SPIreadBytes(uint8_t csPin, uint8_t subAddress,
 	digitalWrite(csPin, HIGH); // Close communication
 	
 	return count;
+#endif
 }
 
 void LSM9DS1::initI2C()
 {
+#ifdef ARDUINO
 	Wire.begin();	// Initialize I2C library
+#else
+	// Init do C I2C stuff here
+#endif
 }
 
 // Wire.h read and write protocols
 void LSM9DS1::I2CwriteByte(uint8_t address, uint8_t subAddress, uint8_t data)
 {
+#ifdef ARDUINO
 	Wire.beginTransmission(address);  // Initialize the Tx buffer
 	Wire.write(subAddress);           // Put slave register address in Tx buffer
 	Wire.write(data);                 // Put data in Tx buffer
 	Wire.endTransmission();           // Send the Tx buffer
+#else
+	// Do C I2C stuff here
+#endif
 }
 
 uint8_t LSM9DS1::I2CreadByte(uint8_t address, uint8_t subAddress)
 {
 	uint8_t data; // `data` will store the register data	
-	
+
+#ifdef ARDUINO
 	Wire.beginTransmission(address);         // Initialize the Tx buffer
 	Wire.write(subAddress);	                 // Put slave register address in Tx buffer
 	Wire.endTransmission(false);             // Send the Tx buffer, but send a restart to keep connection alive
 	Wire.requestFrom(address, (uint8_t) 1);  // Read one byte from slave register address 
 	
 	data = Wire.read();                      // Fill Rx buffer with result
+#else
+	// Do C I2C stuff here
+#endif
 	return data;                             // Return data read from slave register
 }
 
 uint8_t LSM9DS1::I2CreadBytes(uint8_t address, uint8_t subAddress, uint8_t * dest, uint8_t count)
 {
-	byte retVal;
+	byte retVal = 0;
+
+#ifdef ARDUINO
 	Wire.beginTransmission(address);      // Initialize the Tx buffer
 	// Next send the register to be read. OR with 0x80 to indicate multi-read.
 	Wire.write(subAddress | 0x80);        // Put slave register address in Tx buffer
 	retVal = Wire.endTransmission(false); // Send Tx buffer, send a restart to keep connection alive
+#else
+	// Do C I2C stuff here
+#endif
 	if (retVal != 0) // endTransmission should return 0 on success
 		return 0;
 	
+#ifdef ARDUINO
 	retVal = Wire.requestFrom(address, count);  // Read bytes from slave register address 
+#else
+	// Do C I2C stuff here
+#endif
 	if (retVal != count)
 		return 0;
 	
 	for (int i=0; i<count;)
+	{
+#ifdef ARDUINO
 		dest[i++] = Wire.read();
-	
+#else
+	// Do C I2C stuff here
+#endif
+	}
+
 	return count;
 }
