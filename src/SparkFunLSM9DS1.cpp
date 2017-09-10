@@ -40,6 +40,8 @@ Distributed as-is; no warranty is given.
   #include <sys/ioctl.h>
   #include <linux/i2c-dev.h>
   #include <fcntl.h>
+  #include <stdio.h>
+  #include <unistd.h>
 #endif
 
 // Sensor Sensitivity Constants
@@ -160,6 +162,7 @@ void LSM9DS1::init(interface_mode interface, uint8_t xgAddr, uint8_t mAddr)
 		mBiasRaw[i] = 0;
 	}
 	_autoCalc = false;
+	i2c_bus = 0;
 }
 
 
@@ -1169,18 +1172,12 @@ int LSM9DS1::initI2C()
 #ifdef ARDUINO
 	Wire.begin();	// Initialize I2C library
 #else
-	int i2c_bus;
-	
 	if((i2c_bus = open("/dev/i2c-1", O_RDWR)) < 0)
 	{
 		return -1;
 	}
 
-	if(ioctl(i2c_bus, I2C_SLAVE, 0x1e))
-	{
-		return -2;
-	}
-	
+	printf("Opened I2C bus\n");
 #endif
 	return 0;
 }
@@ -1195,6 +1192,23 @@ void LSM9DS1::I2CwriteByte(uint8_t address, uint8_t subAddress, uint8_t data)
 	Wire.endTransmission();           // Send the Tx buffer
 #else
 	// Do C I2C stuff here
+	if(ioctl(i2c_bus, I2C_SLAVE, address) < 0)
+	{
+		printf("Failed to acquire bus access and/or talk to slave\n");
+		return;
+	}
+
+	if(write(i2c_bus, &subAddress, 1) != 1)
+	{
+		printf("Subaddress write failed\n");
+		return;
+	}
+
+	if(write(i2c_bus, &data, 1) != 1)
+	{
+		printf("Data write failed\n");
+		return;
+	}
 #endif
 }
 
@@ -1211,6 +1225,23 @@ uint8_t LSM9DS1::I2CreadByte(uint8_t address, uint8_t subAddress)
 	data = Wire.read();                      // Fill Rx buffer with result
 #else
 	// Do C I2C stuff here
+	if(ioctl(i2c_bus, I2C_SLAVE, address) < 0)
+	{
+		printf("Failed to acquire bus access and/or talk to slave\n");
+		return -1;
+	}
+
+	if(write(i2c_bus, &subAddress, 1) != 1)
+	{
+		printf("Subaddress write failed\n");
+		return -2;
+	}
+
+	if(read(i2c_bus, &data, 1) != 1)
+	{
+		printf("Read failed\n");
+		return -3;
+	}
 #endif
 	return data;                             // Return data read from slave register
 }
@@ -1244,6 +1275,7 @@ uint8_t LSM9DS1::I2CreadBytes(uint8_t address, uint8_t subAddress, uint8_t * des
 		dest[i++] = Wire.read();
 #else
 	// Do C I2C stuff here
+		dest[i++] = I2CreadByte(address, subAddress);
 #endif
 	}
 

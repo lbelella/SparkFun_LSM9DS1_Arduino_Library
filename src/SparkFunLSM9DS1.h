@@ -336,7 +336,8 @@ protected:
 	// x_mAddress and gAddress store the I2C address or SPI chip select pin
 	// for each sensor.
 	uint8_t _mAddress, _xgAddress;
-	
+	int i2c_bus;
+
 	// gRes, aRes, and mRes store the current resolution for each sensor. 
 	// Units of these values would be DPS (or g's or Gs's) per ADC tick.
 	// This value is calculated as (sensor scale) / (2^15).
